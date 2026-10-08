@@ -28,7 +28,10 @@ history of the layout lives in git; this file is the intent.
 - **Keep-outs used:** small ICs and passives at least 3 mm from motor and battery
   pads and 2 mm from the board edge. MOSFETs, the JST connector and 1206 caps may
   sit closer. Bulk-cap pad gaps are at least 0.2 mm for fab safety.
-- No per-phase shunts; current sense stays board-level (INA186, as upstream).
+- **No current sensing at all.** The board-level INA186 (U12), its two shunts
+  (Rsense1, Rsense2) and the input network (R89, R90, C40, C41, C42, plus C94 and
+  R73) are not on the PCB, and per-phase shunts were not wanted either. They
+  are still in the schematic, so schematic and board do not match.
 
 ## Findings
 
@@ -48,6 +51,8 @@ history of the layout lives in git; this file is the intent.
 
 ## To do before this can be a real board
 
+0. Decide on current sensing: remove it from the schematic, or place it. Then
+   run DRC with schematic parity.
 1. Power copper: planes, phase copper, via sets, ground vias at low-side sources.
 2. Signal routing, mostly by hand.
 3. Re-run DRC with schematic parity and ERC, resolve `lib_footprint_mismatch`.

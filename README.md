@@ -19,8 +19,8 @@ MOSFETs, running AM32 and taking DShot over a standard 8-pin connector.
 This is a new PCB layout of the circuit from
 [OpenDrone-hw/OpenESC-30x30](https://github.com/OpenDrone-hw/OpenESC-30x30)
 (CERN-OHL-S-2.0, maintainer [@Just4Stan](https://github.com/Just4Stan)). The
-schematic and parts are unchanged; only the board outline and layout are new. It
-is not an official OpenDrone or Incutec release and is not covered by the
+schematic file is unchanged, but this board **does not include the current-sense
+circuit** (see below); the outline and layout are new. It is not an official OpenDrone or Incutec release and is not covered by the
 upstream OSHWA certification.
 
 ## What changed from the 30x30
@@ -36,6 +36,7 @@ upstream OSHWA certification.
 | Battery pads | per upstream | two castellated pads on a tab, 4 mm wide x 1.5 mm deep |
 | MCU, drivers, critical passives | per upstream | bottom side |
 | Programming pads | per upstream | 2.54 mm pitch with hand-rework clearance |
+| Current sense | INA186 + 2 shunts, board level | **not on this board** |
 
 Fewer bulk capacitors means less local ripple filtering; install the 470 uF 50 V
 electrolytic on the battery leads. Current capacity of this layout is **not**
@@ -60,18 +61,20 @@ an **AT32F421G8U7** (Cortex-M4, QFN-28) drives an **NSG2065Q** three-phase
 half-bridge gate driver, which drives six **SP40N01GHNK** MOSFETs, two per
 phase. One channel is drawn once in `ESC.kicad_sch` and instantiated four times.
 
-Current sensing is **board level, not per motor**: a single INA186A3IDCKR at 100
-V/V sits across two 0.2 mOhm 2512 shunts in parallel (0.1 mOhm total) in the
-+BATT feed. That gives 10 mV/A and roughly 330 A full scale against a 3.3 V ADC,
-reported as `/CURR`.
+**There is no current sensing on this board.** The upstream design has a board-level
+INA186A3IDCKR across two 0.2 mOhm shunts, reported as `/CURR`. That circuit is
+not placed here: U12, Rsense1, Rsense2, R89, R90, C40, C41, C42, C94 and R73 are
+in the schematic but not on the PCB, and no per-phase shunts were added either.
+`/CURR` (connector pin 3) is therefore not driven. See
+[Known issues](#known-issues).
 
 ## Power
 
 ```
-Battery + (2S-8S) ─► 0.1mOhm shunt ─► +BATT
+Battery + (2S-8S) ─► +BATT
 +BATT ─┬─► MOSFET drains, motor phases
        └─► LMR54406DBVR buck ─► +10V ─┬─► 4x gate driver
-                                      └─► TLV76733DRVR ─► +3V3 ─► 4x MCU, INA186
+                                      └─► TLV76733DRVR ─► +3V3 ─► 4x MCU
 ```
 
 ## Key parts
@@ -81,8 +84,6 @@ Battery + (2S-8S) ─► 0.1mOhm shunt ─► +BATT
 | Motor MCU, x4 | U2, U5, U7, U9 | AT32F421G8U7, QFN-28 | C2765098 | One per channel |
 | Gate driver, x4 | U4, U6, U8, U10 | NSG2065Q, QFN-24 | C41414478 | Standard footprint, alternatives exist |
 | Power MOSFET, x24 | Q1-Q24 | SP40N01GHNK, PDFN-8L 5x6 | C22385416 | 40 V, 6 per channel; standard 5x6 DFN footprint |
-| Current sense amp | U12 | INA186A3IDCKR, SC-70-6 | C2058245 | 100 V/V, board-level high side |
-| Current shunt, x2 parallel | Rsense1, Rsense2 | 0.2 mOhm 2512 | C695806 | 0.1 mOhm combined |
 | Buck | U13 | LMR54406DBVR, SOT-23-6 | C5219316 | 1.1 MHz, 0.6 A; FB 115k/10k against 0.8 V for 10.0 V out |
 | Buck inductor | U14 | FTC160808S4R7MBCA | C46594347 | 4.7 uH |
 | LDO | U15 | TLV76733DRVR, WSON-6 | C2848334 | +10 V to +3V3 |
@@ -98,7 +99,7 @@ Betaflight standard 8-pin:
 |---|---|---|
 | 1 | +BATT | Battery positive |
 | 2 | GND | Ground |
-| 3 | /CURR | Current sense telemetry, INA186 output |
+| 3 | /CURR | Current sense output; **not driven on this board** (no INA186 fitted) |
 | 4 | unconnected | See below |
 | 5 | /M1 | DShot, channel 1 |
 | 6 | /M2 | DShot, channel 2 |
@@ -128,7 +129,7 @@ Betaflight and any other DShot-capable flight controller.
 |---|---|
 | Designed in | KiCad 10 |
 | KiCad project | `hardware-20x20/4in1.kicad_pro` (name kept from upstream) |
-| Schematics | `hardware-20x20/4in1.kicad_sch` (power, current sense, connector) plus `ESC.kicad_sch` (one channel, instantiated 4x) |
+| Schematics | `hardware-20x20/4in1.kicad_sch` (power, connector; still contains the upstream current-sense circuit that this board omits) plus `ESC.kicad_sch` (one channel, instantiated 4x) |
 | Board | `hardware-20x20/4in1.kicad_pcb`, 6 layers, 1.6 mm, 2 oz outer / 1 oz inner copper |
 | Board setup | 0.09 mm clearance and track, 0.16 mm on outer layers (2 oz), via 0.35 on 0.20 drill |
 | Design rules | `hardware-20x20/4in1.kicad_dru` |
@@ -151,14 +152,18 @@ Last DRC run (`docs/drc-v15-placement.json`): no clearance errors; 20
 `annular_width` findings (the castellated battery and motor pad half-holes,
 expected for castellation); 29 `lib_footprint_mismatch` (to be cleared by
 re-saving footprints from KiCad against the local library); 472 unconnected
-items because nothing is routed. ERC was not re-run; the schematic is unchanged
-from upstream.
+items because nothing is routed. DRC was run without schematic parity. ERC was
+not re-run; the schematic file is unchanged from upstream.
 
 KiCad files cannot be merged. Close KiCad before any scripted write to a KiCad
 file, and do not text-edit `.kicad_sch`, `.kicad_pcb` or `.kicad_dru`.
 
 ## Known issues
 
+- **Schematic and board disagree.** The schematic still has the current-sense
+  circuit (U12, Rsense1/2, R89, R90, C40-C42, C94, R73), which is not on the PCB.
+  A DRC with schematic parity will report these as missing footprints.
+  Either update the schematic in KiCad to match, or place the circuit.
 - No copper, planes, vias or tracks. Routing, power-plane design and a current
   and thermal check are all still to do.
 - The 20 castellation `annular_width` findings need the fab to accept
