@@ -5,6 +5,12 @@ incutec OpenDrone line. Four independent motor controllers, each with its own
 MCU, gate driver and six MOSFETs, running AM32 and taking DShot over the
 standard 8-pin connector.
 
+> **Fork notice.** This fork adds [`hardware-20x20/`](hardware-20x20/README.md), an
+> alternative PCB layout of the same circuit for the 20 x 20 mm stack pattern. It is
+> placement only (no routing yet) and is not an official release. The upstream 30x30
+> design in `hardware/` is unchanged. The status, shop and OSHWA badges below belong
+> to the upstream project and do not apply to the 20x20 layout.
+
 <p>
 <img src="images/front.png" width="400" alt="OpenESC-30x30 top" />
 <img src="images/back.png" width="400" alt="OpenESC-30x30 bottom" />
