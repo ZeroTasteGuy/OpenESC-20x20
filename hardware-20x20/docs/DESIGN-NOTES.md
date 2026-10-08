@@ -8,7 +8,7 @@ history of the layout lives in git; this file is the intent.
 - Fit the existing OpenESC circuit on a 20 x 20 mm stack pattern, about 35 x 42 mm.
 - Layout in the style of common 20x20 4-in-1 ESCs: motor pads in corner groups
   (3 per motor), no notch in the middle of the long edges, stacked MOSFET pairs.
-- Keep the schematic, nets and parts unchanged.
+- Keep the circuit the same except where the layout forced a change (see below).
 
 ## Placement
 
@@ -31,7 +31,12 @@ history of the layout lives in git; this file is the intent.
 - **No current sensing at all.** The board-level INA186 (U12), its two shunts
   (Rsense1, Rsense2) and the input network (R89, R90, C40, C41, C42, plus C94 and
   R73) are not on the PCB, and per-phase shunts were not wanted either. They
-  are still in the schematic, so schematic and board do not match.
+  were removed from the schematic so it matches the board.
+- **Schematic matched to the board:** castellated strip J2 added (pins +BATT,
+  GND, CURR, unused, M1 to M4); the U3 board block lost the pins that no longer
+  have pads (3 to 11) and was redrawn with the real board outline (chamfered
+  top strip, bottom battery tab, four mounting holes); the battery pad (U3 pin 1)
+  joins `+BATT` directly where the shunts used to sit.
 
 ## Findings
 
@@ -51,8 +56,8 @@ history of the layout lives in git; this file is the intent.
 
 ## To do before this can be a real board
 
-0. Decide on current sensing: remove it from the schematic, or place it. Then
-   run DRC with schematic parity.
+0. Add a PWR_FLAG on `+BATT` and `GND`, set J2's value and BOM flag to match the
+   board, then re-run ERC and DRC with schematic parity.
 1. Power copper: planes, phase copper, via sets, ground vias at low-side sources.
 2. Signal routing, mostly by hand.
 3. Re-run DRC with schematic parity and ERC, resolve `lib_footprint_mismatch`.

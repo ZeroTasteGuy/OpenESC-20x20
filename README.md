@@ -19,9 +19,10 @@ MOSFETs, running AM32 and taking DShot over a standard 8-pin connector.
 This is a new PCB layout of the circuit from
 [OpenDrone-hw/OpenESC-30x30](https://github.com/OpenDrone-hw/OpenESC-30x30)
 (CERN-OHL-S-2.0, maintainer [@Just4Stan](https://github.com/Just4Stan)). The
-schematic file is unchanged, but this board **does not include the current-sense
-circuit** (see below); the outline and layout are new. It is not an official OpenDrone or Incutec release and is not covered by the
-upstream OSHWA certification.
+outline and layout are new, and this board **does not include the current-sense
+circuit** (see below); the schematic was edited to match. It is not an official
+OpenDrone or Incutec release and is not covered by the upstream OSHWA
+certification.
 
 ## What changed from the 30x30
 
@@ -63,10 +64,10 @@ phase. One channel is drawn once in `ESC.kicad_sch` and instantiated four times.
 
 **There is no current sensing on this board.** The upstream design has a board-level
 INA186A3IDCKR across two 0.2 mOhm shunts, reported as `/CURR`. That circuit is
-not placed here: U12, Rsense1, Rsense2, R89, R90, C40, C41, C42, C94 and R73 are
-in the schematic but not on the PCB, and no per-phase shunts were added either.
-`/CURR` (connector pin 3) is therefore not driven. See
-[Known issues](#known-issues).
+not placed here and was removed from the schematic: U12, Rsense1, Rsense2, R89,
+R90, C40, C41, C42, C94 and R73. No per-phase shunts were added either. The
+battery pad (U3 pin 1) now connects straight to `+BATT`. `/CURR` (connector pin 3)
+is kept as a net but is not driven.
 
 ## Power
 
@@ -129,7 +130,7 @@ Betaflight and any other DShot-capable flight controller.
 |---|---|
 | Designed in | KiCad 10 |
 | KiCad project | `hardware-20x20/4in1.kicad_pro` (name kept from upstream) |
-| Schematics | `hardware-20x20/4in1.kicad_sch` (power, connector; still contains the upstream current-sense circuit that this board omits) plus `ESC.kicad_sch` (one channel, instantiated 4x) |
+| Schematics | `hardware-20x20/4in1.kicad_sch` (power, connectors, board block U3, castellated strip J2) plus `ESC.kicad_sch` (one channel, instantiated 4x, unchanged from upstream) |
 | Board | `hardware-20x20/4in1.kicad_pcb`, 6 layers, 1.6 mm, 2 oz outer / 1 oz inner copper |
 | Board setup | 0.09 mm clearance and track, 0.16 mm on outer layers (2 oz), via 0.35 on 0.20 drill |
 | Design rules | `hardware-20x20/4in1.kicad_dru` |
@@ -148,26 +149,37 @@ kicad-cli sch erc hardware-20x20/4in1.kicad_sch
 kicad-cli pcb drc --schematic-parity --refill-zones hardware-20x20/4in1.kicad_pcb
 ```
 
-Last DRC run (`docs/drc-v15-placement.json`): no clearance errors; 20
-`annular_width` findings (the castellated battery and motor pad half-holes,
-expected for castellation); 29 `lib_footprint_mismatch` (to be cleared by
-re-saving footprints from KiCad against the local library); 472 unconnected
-items because nothing is routed. DRC was run without schematic parity. ERC was
-not re-run; the schematic file is unchanged from upstream.
+Last DRC run (`docs/drc-v15-placement.json`, without schematic parity): no
+clearance or annular-ring errors after the castellated pad fix; 29
+`lib_footprint_mismatch` (to be cleared by re-saving footprints from KiCad
+against the local library); 472 unconnected items because nothing is routed.
+
+With schematic parity and ERC (KiCad 10, run on this schematic and board):
+
+- Parity: every schematic part is on the board, and J2 matches except for its
+  value and BOM flag (see Known issues). 25 footprints are
+  board-only (the CB bulk caps, kept board-only as upstream does). 16
+  `net_conflict` notes on IC pads and a J2 pad 4 net name are inherited from
+  upstream and the board's footprints. About 146 field mismatches are metadata
+  only (Manufacturer fields blank on the board).
+- ERC: 18 `pin_not_driven` errors (was 24 upstream) and 4
+  `power_pin_not_driven` (was 3). Two of those four appeared because the removed
+  U3 power-output pins no longer drive `+BATT` and `GND`; adding a PWR_FLAG on
+  each net clears them.
 
 KiCad files cannot be merged. Close KiCad before any scripted write to a KiCad
 file, and do not text-edit `.kicad_sch`, `.kicad_pcb` or `.kicad_dru`.
 
 ## Known issues
 
-- **Schematic and board disagree.** The schematic still has the current-sense
-  circuit (U12, Rsense1/2, R89, R90, C40-C42, C94, R73), which is not on the PCB.
-  A DRC with schematic parity will report these as missing footprints.
-  Either update the schematic in KiCad to match, or place the circuit.
+- **Schematic edits to finish.** Add a PWR_FLAG on `+BATT` and `GND` to clear two
+  new ERC errors, and set J2's value to "Castellated FC pads" with Exclude from
+  BOM ticked so it matches the board footprint exactly.
+- **No current sensing.** Removed on purpose (see Architecture). The ESC reports no
+  current telemetry; `/CURR` is undriven.
 - No copper, planes, vias or tracks. Routing, power-plane design and a current
   and thermal check are all still to do.
-- The 20 castellation `annular_width` findings need the fab to accept
-  half-plated holes of this size.
+- The castellated pads need the fab to accept half-plated holes of this size.
 - Some small parts sit in tight clusters (0.2 to 0.3 mm gaps). An earlier
   routing attempt on a related layout failed mostly on boxed-in pads, so expect
   to spread parts or route by hand.
@@ -178,6 +190,7 @@ file, and do not text-edit `.kicad_sch`, `.kicad_pcb` or `.kicad_dru`.
 | Rev | Date | Change |
 |---|---|---|
 | v15 | 2026-10-08 | Placement only: 28 bulk caps with fab-safe spacing, battery castellation pads run to the edge, J2 silk labels 1.0 mm. No copper. |
+| v15a | 2026-10-08 | Castellated motor and signal pads widened to 5 mm (clears the annular-width DRC errors). Schematic matched to the board: current-sense circuit removed, castellated strip J2 added, U3 board block redrawn as the real outline with only the pins that have pads. |
 
 Upstream revision history (30x30 Rev1 to Rev3.3) is in the
 [OpenESC-30x30 repository](https://github.com/OpenDrone-hw/OpenESC-30x30).
