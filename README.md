@@ -150,7 +150,9 @@ kicad-cli pcb drc --schematic-parity --refill-zones hardware-20x20/4in1.kicad_pc
 ```
 
 Last DRC run (`docs/drc-v15-placement.json`, without schematic parity): no
-clearance or annular-ring errors after the castellated pad fix; 29
+clearance or annular-ring errors after the castellated pad fix (the project has
+`copper_edge_clearance` set to ignore; with it on, 4 hits remain on the battery
+tab, see `hardware-20x20/docs/DESIGN-NOTES.md`); 29
 `lib_footprint_mismatch` (to be cleared by re-saving footprints from KiCad
 against the local library); 472 unconnected items because nothing is routed.
 

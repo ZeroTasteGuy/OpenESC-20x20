@@ -25,6 +25,18 @@ history of the layout lives in git; this file is the intent.
 - **Symmetry:** the two half-boards are 180 degree twins.
 - **Battery tab:** two castellated pads 4 mm wide and 1.5 mm deep with rounded
   tab corners; a bulk-cap row sits directly above it.
+- **Castellation convention:** the motor pads (U3 pads 12 to 23) and the J2 strip
+  are centred on their plated hole, with the hole on the board edge and no drill
+  offset. The pads are 5 x 2.6 mm (motor) and 1.2 x 1.6 mm (J2), so 2.5 mm and
+  0.8 mm of copper lie inside the board; the outer half hangs past the outline
+  and is milled away by the fab. An earlier version put the pad on the edge with
+  the drill offset inboard, which missed the Edge.Cuts half-hole notch and gave
+  zero annular width. The battery castellations were already consistent (hole
+  centre 0.58 mm outside the edge, 1.5 mm deep notch).
+- **Known DRC note:** the project sets `copper_edge_clearance` to ignore. With it
+  enabled there are 4 hits on the battery tab, where the pad copper meets the
+  outline beside each notch (near x 69.1 and 73.725, y 70.05). Accepted for now;
+  confirm with the fab.
 - **Keep-outs used:** small ICs and passives at least 3 mm from motor and battery
   pads and 2 mm from the board edge. MOSFETs, the JST connector and 1206 caps may
   sit closer. Bulk-cap pad gaps are at least 0.2 mm for fab safety.
